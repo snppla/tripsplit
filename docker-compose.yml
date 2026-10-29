@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tripsplit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: tripsplit
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tripsplit -d tripsplit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://tripsplit:${POSTGRES_PASSWORD}@db:5432/tripsplit
+      AUTH_TRUST_HOST: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Only bound to localhost; public traffic arrives through the tunnel.
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on:
+      - app
+
+volumes:
+  pgdata:

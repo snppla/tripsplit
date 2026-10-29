@@ -1,0 +1,44 @@
+{
+  "name": "tripsplit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:start": "npm run dev:up && next dev",
+    "dev": "next dev",
+    "dev:up": "docker compose -f compose.dev.yml up -d --wait",
+    "dev:down": "docker compose -f compose.dev.yml down",
+    "dev:reset": "docker compose -f compose.dev.yml down -v && docker compose -f compose.dev.yml up -d --wait && npm run db:seed",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.3",
+    "drizzle-orm": "^0.45.4",
+    "next": "^16.4.3",
+    "next-auth": "^5.0.0-beta.32",
+    "nodemailer": "^8.0.11",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "^0.31.11",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}
