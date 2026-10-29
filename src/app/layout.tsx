@@ -19,7 +19,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="border-b border-stone-200 bg-white/80 backdrop-blur dark:border-stone-800 dark:bg-stone-900/80">
           <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
             <Link href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-              <span className="grid size-8 place-items-center rounded-lg bg-brand-600 text-white">⇄</span>
+              <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
+                <rect width="32" height="32" rx="7" className="fill-brand-600" />
+                <g fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 12h15M19 8l4 4-4 4" />
+                  <path d="M24 20H9M13 16l-4 4 4 4" />
+                </g>
+              </svg>
               TripSplit
             </Link>
             {user && (
