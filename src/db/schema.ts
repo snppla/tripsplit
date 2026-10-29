@@ -181,10 +181,12 @@ export const settlements = pgTable(
     amount: bigint("amount", { mode: "number" }).notNull(),
     date: date("date").notNull(),
     note: text("note"),
+    /** Optional: the expense this payment pays back. Kept if the expense is deleted. */
+    expenseId: text("expense_id").references(() => expenses.id, { onDelete: "set null" }),
     createdById: text("created_by_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("settlement_trip_idx").on(t.tripId)],
+  (t) => [index("settlement_trip_idx").on(t.tripId), index("settlement_expense_idx").on(t.expenseId)],
 );
 
 export const eventEntity = pgEnum("event_entity", ["trip", "member", "expense", "settlement"]);

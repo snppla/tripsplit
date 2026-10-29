@@ -32,6 +32,9 @@ export type SettlementSnapshot = {
   amount: number;
   date: string;
   note: string | null;
+  /** Absent on snapshots taken before payments could be linked to expenses. */
+  expenseId?: string | null;
+  expenseDescription?: string | null;
   createdById: string | null;
   createdAt: string;
 };
@@ -87,6 +90,9 @@ export async function snapshotSettlement(db: Db | Tx, settlementId: string): Pro
   const [s] = await db.select().from(settlements).where(eq(settlements.id, settlementId));
   if (!s) return null;
   const names = await memberNames(db, [s.fromMemberId, s.toMemberId]);
+  const [expense] = s.expenseId
+    ? await db.select({ description: expenses.description }).from(expenses).where(eq(expenses.id, s.expenseId))
+    : [];
   return {
     fromMemberId: s.fromMemberId,
     fromName: names.get(s.fromMemberId) ?? "?",
@@ -95,6 +101,8 @@ export async function snapshotSettlement(db: Db | Tx, settlementId: string): Pro
     amount: s.amount,
     date: s.date,
     note: s.note,
+    expenseId: s.expenseId,
+    expenseDescription: expense?.description ?? null,
     createdById: s.createdById,
     createdAt: s.createdAt.toISOString(),
   };

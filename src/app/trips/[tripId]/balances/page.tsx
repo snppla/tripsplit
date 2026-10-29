@@ -12,7 +12,8 @@ import { SubmitButton } from "@/components/SubmitButton";
 export default async function BalancesPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = await params;
   const { trip, member: me } = await requireMember(tripId);
-  const { members, balances, settlements } = await loadTripData(tripId);
+  const { members, expenses, balances, settlements } = await loadTripData(tripId);
+  const descriptionOf = new Map(expenses.map((e) => [e.id, e.description]));
 
   const money = (n: number) => formatMoney(n, trip.baseCurrency);
   const nameOf = new Map(members.map((m) => [m.id, m.id === me.id ? "You" : m.name]));
@@ -103,6 +104,7 @@ export default async function BalancesPage({ params }: { params: Promise<{ tripI
                 <div className="min-w-0 flex-1">
                   <p className="text-sm">
                     <strong>{nameOf.get(s.fromMemberId)}</strong> paid <strong>{nameOf.get(s.toMemberId)}</strong>
+                    {s.expenseId && descriptionOf.has(s.expenseId) && <> for {descriptionOf.get(s.expenseId)}</>}
                   </p>
                   <p className="muted text-xs">
                     {formatDate(s.date)}
@@ -123,6 +125,11 @@ export default async function BalancesPage({ params }: { params: Promise<{ tripI
             <SettlementForm
               action={recordAction}
               members={members.map((m) => ({ id: m.id, name: nameOf.get(m.id)! }))}
+              expenses={expenses.map((e) => ({
+                id: e.id,
+                paidById: e.paidById,
+                label: `${e.description} · ${formatMoney(e.amount, e.currency)}, paid by ${nameOf.get(e.paidById)}`,
+              }))}
               currency={trip.baseCurrency}
               defaultFrom={me.id}
             />

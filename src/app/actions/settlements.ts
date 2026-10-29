@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { settlements, tripEvents, tripMembers } from "@/db/schema";
+import { expenses, settlements, tripEvents, tripMembers } from "@/db/schema";
 import { isDate, str, type ActionState } from "@/lib/action";
 import { today } from "@/lib/format";
 import { logEvent, snapshotSettlement, type SettlementSnapshot } from "@/lib/history";
@@ -16,6 +16,7 @@ export async function recordSettlement(tripId: string, _: ActionState, formData:
   const toMemberId = str(formData, "to");
   const date = str(formData, "date") || today();
   const note = str(formData, "note") || null;
+  const expenseId = str(formData, "expenseId") || null;
 
   if (!fromMemberId || !toMemberId || fromMemberId === toMemberId)
     return { error: "Choose two different people." };
@@ -27,11 +28,16 @@ export async function recordSettlement(tripId: string, _: ActionState, formData:
   const members = await db.query.tripMembers.findMany({ where: eq(tripMembers.tripId, tripId) });
   const ids = new Set(members.map((m) => m.id));
   if (!ids.has(fromMemberId) || !ids.has(toMemberId)) return { error: "Unknown person." };
+  if (
+    expenseId &&
+    !(await db.query.expenses.findFirst({ where: and(eq(expenses.id, expenseId), eq(expenses.tripId, tripId)) }))
+  )
+    return { error: "That expense no longer exists." };
 
   await db.transaction(async (tx) => {
     const [{ id }] = await tx
       .insert(settlements)
-      .values({ tripId, fromMemberId, toMemberId, amount, date, note, createdById: user.id })
+      .values({ tripId, fromMemberId, toMemberId, amount, date, note, expenseId, createdById: user.id })
       .returning({ id: settlements.id });
     await logEvent(tx, {
       tripId,
@@ -83,6 +89,13 @@ export async function restoreSettlement(tripId: string, eventId: string): Promis
   if (!ids.has(snap.fromMemberId) || !ids.has(snap.toMemberId))
     return { error: "Someone in this payment has since been removed from the trip." };
 
+  // Re-link to the expense only if it still exists.
+  const expenseId =
+    snap.expenseId &&
+    (await db.query.expenses.findFirst({ where: and(eq(expenses.id, snap.expenseId), eq(expenses.tripId, tripId)) }))
+      ? snap.expenseId
+      : null;
+
   await db.transaction(async (tx) => {
     await tx.insert(settlements).values({
       id: event.entityId,
@@ -92,6 +105,7 @@ export async function restoreSettlement(tripId: string, eventId: string): Promis
       amount: snap.amount,
       date: snap.date,
       note: snap.note,
+      expenseId,
       createdById: snap.createdById,
       createdAt: new Date(snap.createdAt),
     });

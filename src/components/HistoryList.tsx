@@ -127,6 +127,7 @@ function EventBody({
     const what = (
       <>
         <strong>{s.fromName}</strong> paid <strong>{s.toName}</strong>
+        {s.expenseDescription && <> for <strong>{s.expenseDescription}</strong></>}
         {s.note && ` (${s.note})`}
       </>
     );

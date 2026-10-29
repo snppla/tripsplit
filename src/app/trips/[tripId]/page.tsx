@@ -4,6 +4,7 @@ import { loadTripData } from "@/lib/trip-data";
 import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/format";
 import { categoryIcon } from "@/lib/categories";
+import { repaidByExpense, repaidKey } from "@/lib/repayments";
 
 export default async function ExpensesPage({
   params,
@@ -26,6 +27,9 @@ export default async function ExpensesPage({
   const total = expenses.reduce((a, e) => a + e.baseAmount, 0);
   const mine = balances.find((b) => b.memberId === me.id);
   const money = (n: number) => formatMoney(n, trip.baseCurrency);
+
+  const repaid = repaidByExpense(expenses, settlements);
+  const descriptionOf = new Map(expenses.map((e) => [e.id, e.description]));
 
   const shown = person ? expenses.filter((e) => e.paidById === person.id || shareOf.has(e.id)) : expenses;
   const possessive = !person || person.id === me.id ? "your" : `${person.name}'s`;
@@ -91,6 +95,10 @@ export default async function ExpensesPage({
               <ul className="card divide-y divide-stone-100 dark:divide-stone-800">
                 {items.map((e) => {
                   const share = shareOf.get(e.id);
+                  const paidBack =
+                    share !== undefined &&
+                    e.paidById !== focusId &&
+                    (repaid.get(repaidKey(e.id, focusId)) ?? 0) >= share;
                   // How this expense moved the person's balance: what they paid minus their share.
                   const effect = person ? (e.paidById === person.id ? e.baseAmount : 0) - (share ?? 0) : 0;
                   return (
@@ -107,6 +115,7 @@ export default async function ExpensesPage({
                             {share !== undefined
                               ? ` · ${possessive} share ${money(share)}`
                               : person && ` · ${person.id === me.id ? "you're" : `${person.name} is`} not in the split`}
+                            {paidBack && " · paid back ✓"}
                           </p>
                         </div>
                         <div className="text-right">
@@ -140,6 +149,7 @@ export default async function ExpensesPage({
         <PersonPayments
           payments={settlements.filter((s) => s.fromMemberId === person.id || s.toMemberId === person.id)}
           nameOf={nameOf}
+          descriptionOf={descriptionOf}
           money={money}
         />
       )}
@@ -224,10 +234,20 @@ function PersonSummary({
 function PersonPayments({
   payments,
   nameOf,
+  descriptionOf,
   money,
 }: {
-  payments: { id: string; fromMemberId: string; toMemberId: string; amount: number; date: string; note: string | null }[];
+  payments: {
+    id: string;
+    fromMemberId: string;
+    toMemberId: string;
+    amount: number;
+    date: string;
+    note: string | null;
+    expenseId: string | null;
+  }[];
   nameOf: Map<string, string>;
+  descriptionOf: Map<string, string>;
   money: (n: number) => string;
 }) {
   if (payments.length === 0) return null;
@@ -240,6 +260,7 @@ function PersonPayments({
             <div className="min-w-0 flex-1">
               <p className="text-sm">
                 <strong>{nameOf.get(s.fromMemberId)}</strong> paid <strong>{nameOf.get(s.toMemberId)}</strong>
+                {s.expenseId && descriptionOf.has(s.expenseId) && <> for {descriptionOf.get(s.expenseId)}</>}
               </p>
               <p className="muted text-xs">
                 {formatDate(s.date)}
