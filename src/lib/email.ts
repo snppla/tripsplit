@@ -12,6 +12,14 @@ function transport() {
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
       : undefined,
+    // Fail fast instead of nodemailer's multi-minute defaults, so an
+    // unreachable server doesn't hang the request.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
+    // Opt-in for a relay on a private network that uses a self-signed
+    // certificate. Mail is still encrypted, just not verified.
+    tls: process.env.SMTP_ALLOW_SELF_SIGNED === "true" ? { rejectUnauthorized: false } : undefined,
   });
 }
 

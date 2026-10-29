@@ -72,18 +72,25 @@ export async function addMember(tripId: string, _: ActionState, formData: FormDa
   return { ok };
 }
 
-export async function resendInvite(tripId: string, memberId: string) {
+export async function resendInvite(tripId: string, memberId: string): Promise<ActionState> {
   const { user, trip, member: me } = await requireMember(tripId);
   const target = await db.query.tripMembers.findFirst({
     where: and(eq(tripMembers.id, memberId), eq(tripMembers.tripId, tripId), isNull(tripMembers.userId)),
   });
-  if (!target?.email || !emailEnabled()) return;
-  await sendInviteEmail({
-    to: target.email,
-    inviterName: me.name || user.name || "A friend",
-    tripName: trip.name,
-    link: inviteUrl(trip.inviteToken),
-  });
+  if (!target?.email) return { error: "This person has no email address." };
+  if (!emailEnabled()) return { error: "Email isn't set up on this server." };
+  try {
+    await sendInviteEmail({
+      to: target.email,
+      inviterName: me.name || user.name || "A friend",
+      tripName: trip.name,
+      link: inviteUrl(trip.inviteToken),
+    });
+  } catch (err) {
+    console.error("Failed to resend invite email", err);
+    return { error: "Couldn't send the email. Share the invite link instead." };
+  }
+  return { ok: "Sent" };
 }
 
 export async function renameMember(tripId: string, memberId: string, formData: FormData) {

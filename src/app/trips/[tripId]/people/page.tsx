@@ -6,10 +6,10 @@ import { regenerateInvite } from "@/app/actions/trips";
 import { inviteUrl, requireMember } from "@/lib/members";
 import { loadTripData } from "@/lib/trip-data";
 import { emailEnabled } from "@/lib/email";
+import { ActionButton } from "@/components/ActionButton";
 import { AddMemberForm } from "@/components/AddMemberForm";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { CopyButton } from "@/components/CopyButton";
-import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function PeoplePage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = await params;
@@ -90,9 +90,9 @@ export default async function PeoplePage({ params }: { params: Promise<{ tripId:
                   </p>
                 </div>
                 {!m.userId && m.email && canEmail && (
-                  <form action={resendInvite.bind(null, tripId, m.id)}>
-                    <SubmitButton className="btn-secondary btn-sm" pendingText="Sending…">Resend</SubmitButton>
-                  </form>
+                  <ActionButton action={resendInvite.bind(null, tripId, m.id)} pendingText="Sending…">
+                    Resend
+                  </ActionButton>
                 )}
                 {isOwner && m.role !== "owner" && !involved.has(m.id) && (
                   <ConfirmButton action={removeMember.bind(null, tripId, m.id)} confirm={`Remove ${m.name} from the trip?`}>
