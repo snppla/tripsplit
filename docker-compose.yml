@@ -24,9 +24,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Only bound to localhost; public traffic arrives through the tunnel.
-    ports:
-      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    # No published ports: cloudflared reaches the app at http://app:3000 over
+    # the compose network, so nothing on the host needs to be free.
 
   cloudflared:
     image: cloudflare/cloudflared:latest
