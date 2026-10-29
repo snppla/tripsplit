@@ -34,7 +34,8 @@ services:
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
     depends_on:
-      - app
+      app:
+        condition: service_healthy
 
 volumes:
   pgdata:

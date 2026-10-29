@@ -1,0 +1,40 @@
+# Infrastructure for running TripSplit on Dokploy with zero-downtime deploys.
+# The app itself is a separate Dokploy *Application* (built from the
+# Dockerfile), which Dokploy runs as a Swarm service and updates start-first.
+# Both services join dokploy-network so the app and tunnel can reach them.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tripsplit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: tripsplit
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tripsplit -d tripsplit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      default:
+      dokploy-network:
+        # Unique name on the shared network; use it in the app's DATABASE_URL.
+        aliases: [tripsplit-db]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - dokploy-network
+
+volumes:
+  pgdata:
+
+networks:
+  dokploy-network:
+    external: true
