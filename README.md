@@ -38,18 +38,6 @@ Database migrations run automatically when the app starts.
 
 Every create, edit, and delete of an expense, payment, person, or trip setting is written to the append-only `trip_event` table. For expenses and payments, the log entry is written in the same transaction as the change. Each row includes a full before/after JSON snapshot, with people's names stored alongside their ids so the history stays readable after renames. A restore or revert is logged as an event too, so nothing is ever lost. Nothing in the app deletes history rows. They're only removed when the whole trip is deleted.
 
-## Zero-downtime deploys (Dokploy)
-
-`docker-compose.yml` runs everything as one Compose project, which restarts the app on each deploy. For zero downtime on Dokploy, run the app as a Dokploy **Application**, which is a Swarm service updated start-first, and run Postgres and the tunnel from `docker-compose.dokploy.yml`:
-
-1. **Infra (Compose service):** set the compose path to `docker-compose.dokploy.yml`, with env `POSTGRES_PASSWORD` and `CLOUDFLARE_TUNNEL_TOKEN`. If you reuse the existing Compose service, its data volume carries over.
-2. **App (Application):** GitHub source, Dockerfile build, no domain. Give it the app variables from `.env.example`, with `DATABASE_URL=postgres://tripsplit:<password>@tripsplit-db:5432/tripsplit` and `AUTH_TRUST_HOST=true`. Add `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`, generated once and kept the same across deploys. It's read at runtime, so it goes with the other environment variables, not the build arguments. Under Advanced → Cluster Settings → Swarm Settings:
-   - Health Check: `{"Test":["CMD-SHELL","wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"],"Interval":10000000000,"Timeout":5000000000,"StartPeriod":30000000000,"Retries":3}`
-   - Update Config: `{"Parallelism":1,"Delay":5000000000,"FailureAction":"rollback","Order":"start-first"}`
-3. **Tunnel:** point the Cloudflare public hostname at `http://<application name>:3000`.
-
-During a deploy, the old and new versions run side by side for a moment. Migrations take a Postgres advisory lock so only one copy runs them, but they must stay **backward compatible**. Adding tables and columns is fine. Renaming or dropping something needs two deploys: first stop using it, then remove it.
-
 ## Live updates
 
 Open trip pages update by themselves when someone else makes a change. A trigger on `trip_event` runs `pg_notify('trip_events', …)` when the change commits. The app keeps one `LISTEN` connection (`src/lib/realtime.ts`) and pushes changes to browsers over Server-Sent Events (`/api/trips/[id]/events`). The browser then soft-refreshes server data, which keeps anything half-typed in a form, and shows a toast such as "Bob added an expense". A heartbeat every 25s keeps the stream open through Cloudflare. Pages also catch up after reconnecting and when a phone brings the tab back to the foreground.
