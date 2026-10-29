@@ -22,6 +22,11 @@ export function SettlementForm({
   const [state, formAction] = useActionState(action, undefined);
   const [to, setTo] = useState(members.find((m) => m.id !== defaultFrom)?.id ?? "");
   const [date, setDate] = useState("");
+  // Bumped after each successful save to clear the amount and note.
+  const [resetKey, setResetKey] = useState(0);
+  useEffect(() => {
+    if (state?.ok) setResetKey((k) => k + 1);
+  }, [state]);
   // The user's local date; the server doesn't know their timezone.
   useEffect(() => setDate(new Date().toLocaleDateString("en-CA")), []);
 
@@ -60,7 +65,7 @@ export function SettlementForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label" htmlFor="amount">Amount ({currency})</label>
-          <AmountInput id="amount" name="amount" currency={currency} className="input tabular-nums" required />
+          <AmountInput key={resetKey} id="amount" name="amount" currency={currency} className="input tabular-nums" required />
         </div>
         <div>
           <label className="label" htmlFor="date">Paid on</label>
@@ -69,7 +74,7 @@ export function SettlementForm({
       </div>
       <div>
         <label className="label" htmlFor="note">Note</label>
-        <input id="note" name="note" className="input" placeholder="Venmo" />
+        <input key={resetKey} id="note" name="note" className="input" placeholder="Venmo" />
       </div>
       {state?.error && <p className="alert-error">{state.error}</p>}
       {state?.ok && <p className="alert-ok">{state.ok}</p>}

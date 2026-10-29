@@ -1,26 +1,22 @@
 import Link from "next/link";
-import { deleteSettlement, markTransferPaid, recordSettlement } from "@/app/actions/settlements";
+import { markTransferPaid } from "@/app/actions/settlements";
 import { requireMember } from "@/lib/members";
 import { loadTripData } from "@/lib/trip-data";
 import { suggestTransfers } from "@/lib/balances";
 import { formatMoney, minorToInput } from "@/lib/money";
-import { formatDate, today } from "@/lib/format";
-import { ConfirmButton } from "@/components/ConfirmButton";
-import { SettlementForm } from "@/components/SettlementForm";
+import { today } from "@/lib/format";
 import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function BalancesPage({ params }: { params: Promise<{ tripId: string }> }) {
   const { tripId } = await params;
   const { trip, member: me } = await requireMember(tripId);
-  const { members, expenses, balances, settlements } = await loadTripData(tripId);
-  const descriptionOf = new Map(expenses.map((e) => [e.id, e.description]));
+  const { members, balances } = await loadTripData(tripId);
 
   const money = (n: number) => formatMoney(n, trip.baseCurrency);
   const nameOf = new Map(members.map((m) => [m.id, m.id === me.id ? "You" : m.name]));
   const transfers = suggestTransfers(balances);
   const maxAbs = Math.max(1, ...balances.map((b) => Math.abs(b.net)));
   const sorted = [...balances].sort((a, b) => b.net - a.net);
-  const recordAction = recordSettlement.bind(null, tripId);
 
   return (
     <div className="space-y-6">
@@ -51,7 +47,7 @@ export default async function BalancesPage({ params }: { params: Promise<{ tripI
           </ul>
         )}
         <p className="muted mt-2 text-xs">
-          The fewest payments needed to even everything out. &ldquo;Mark paid&rdquo; records the payment once it&apos;s made.
+          The fewest payments needed to even everything out. &ldquo;Mark paid&rdquo; records the payment on the Payments tab once it&apos;s made.
         </p>
       </section>
 
@@ -95,47 +91,9 @@ export default async function BalancesPage({ params }: { params: Promise<{ tripI
         </ul>
       </section>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Payments</h2>
-        {settlements.length > 0 && (
-          <ul className="card mb-3 divide-y divide-stone-100 dark:divide-stone-800">
-            {settlements.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm">
-                    <strong>{nameOf.get(s.fromMemberId)}</strong> paid <strong>{nameOf.get(s.toMemberId)}</strong>
-                    {s.expenseId && descriptionOf.has(s.expenseId) && <> for {descriptionOf.get(s.expenseId)}</>}
-                  </p>
-                  <p className="muted text-xs">
-                    {formatDate(s.date)}
-                    {s.note && ` · ${s.note}`}
-                  </p>
-                </div>
-                <span className="font-semibold tabular-nums">{money(s.amount)}</span>
-                <ConfirmButton action={deleteSettlement.bind(null, tripId, s.id)} confirm="Delete this payment?">
-                  ✕
-                </ConfirmButton>
-              </li>
-            ))}
-          </ul>
-        )}
-        <details className="card p-4">
-          <summary className="cursor-pointer text-sm font-medium">Record a payment</summary>
-          <div className="mt-4">
-            <SettlementForm
-              action={recordAction}
-              members={members.map((m) => ({ id: m.id, name: nameOf.get(m.id)! }))}
-              expenses={expenses.map((e) => ({
-                id: e.id,
-                paidById: e.paidById,
-                label: `${e.description} · ${formatMoney(e.amount, e.currency)}, paid by ${nameOf.get(e.paidById)}`,
-              }))}
-              currency={trip.baseCurrency}
-              defaultFrom={me.id}
-            />
-          </div>
-        </details>
-      </section>
+      <Link href={`/trips/${tripId}/payments`} className="btn-secondary w-full">
+        View or record payments →
+      </Link>
     </div>
   );
 }
