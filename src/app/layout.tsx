@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = session?.user;
   return (
     <html lang="en">
-      <body className="min-h-dvh">
+      <body className="flex min-h-dvh flex-col">
         <header className="border-b border-stone-200 bg-white/80 backdrop-blur dark:border-stone-800 dark:bg-stone-900/80">
           <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
             <Link href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
@@ -46,7 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             )}
           </div>
         </header>
-        <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-3xl px-4 pb-8 text-center text-xs">
           <Link href="/privacy" className="muted hover:underline">Privacy</Link>
         </footer>

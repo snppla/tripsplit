@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { DEV_USERS, devLoginEnabled } from "@/lib/dev-login";
@@ -34,10 +33,7 @@ export default async function SignInPage({
         </form>
       )}
       {devLoginEnabled() && <DevLogin callbackUrl={target} />}
-      <p className="muted mt-6 text-xs">
-        We only use your name, email, and profile picture to run TripSplit. See the{" "}
-        <Link href="/privacy" className="underline">privacy policy</Link>.
-      </p>
+      <p className="muted mt-6 text-xs">We only use your name, email, and profile picture to run TripSplit.</p>
     </div>
   );
 }
