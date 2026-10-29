@@ -47,6 +47,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </header>
         <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+        <footer className="mx-auto max-w-3xl px-4 pb-8 text-center text-xs">
+          <Link href="/privacy" className="muted hover:underline">Privacy</Link>
+        </footer>
       </body>
     </html>
   );
