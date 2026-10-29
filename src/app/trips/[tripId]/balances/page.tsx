@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { deleteSettlement, markTransferPaid, recordSettlement } from "@/app/actions/settlements";
 import { requireMember } from "@/lib/members";
 import { loadTripData } from "@/lib/trip-data";
@@ -59,7 +60,9 @@ export default async function BalancesPage({ params }: { params: Promise<{ tripI
           {sorted.map((b) => (
             <li key={b.memberId} className="px-4 py-3">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="font-medium">{nameOf.get(b.memberId)}</span>
+                <Link href={`/trips/${tripId}?person=${b.memberId}`} className="font-medium hover:underline">
+                  {nameOf.get(b.memberId)}
+                </Link>
                 <span
                   className={`font-semibold tabular-nums ${
                     b.net > 0 ? "text-brand-600" : b.net < 0 ? "text-red-600 dark:text-red-400" : "muted"
